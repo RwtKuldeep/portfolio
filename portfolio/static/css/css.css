@@ -1,0 +1,36 @@
+#main-div {
+  background-color: black;
+}
+
+#navbar {
+  float: right;
+  list-style: none;
+}
+
+#navbar a {
+  text-decoration: none;
+  color: white;
+}
+
+#navbar a:hover {
+  color: black;
+  background-color: white;
+}
+
+#box {
+  background-color: #353c3d;
+}
+
+#box:hover {
+  background-color: rgb(74, 152, 143);
+  color: white;
+}
+
+.img {
+  height: 400px;
+  width: 100%;
+}
+
+#footer {
+  background-color: red;
+}
