@@ -1,19 +1,56 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
 
 trigger:
-- main
+  - main
 
 pool:
   vmImage: ubuntu-latest
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+variables:
+  pythonVersion: '3.14'
+  azureServiceConnection: 'sc-portfolio-azure'
+  webAppName: 'myportfolio'
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+steps:
+  # 1. Select Python
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '$(pythonVersion)'
+    displayName: 'Set Python version'
+
+  # 2. Install dependencies
+  - script: |
+      python -m venv .venv
+      source .venv/bin/activate
+      python -m pip install --upgrade pip
+      pip install -r requirements.txt
+      python manage.py check
+    displayName: 'Install dependencies and check Django'
+
+  # 3. Create deployment ZIP
+  - task: ArchiveFiles@2
+    displayName: 'Package Django application'
+    inputs:
+      rootFolderOrFile: '$(Build.SourcesDirectory)'
+      includeRootFolder: false
+      archiveType: zip
+      archiveFile: '$(Build.ArtifactStagingDirectory)/app.zip'
+      replaceExistingArchive: true
+
+  # 4. Publish deployment package
+  - task: PublishPipelineArtifact@1
+    inputs:
+      targetPath: '$(Build.ArtifactStagingDirectory)/app.zip'
+      artifact: 'django-package'
+    displayName: 'Publish artifact'
+
+  # 5. Deploy to Azure App Service
+  - task: AzureWebApp@1
+    displayName: 'Deploy Django portfolio'
+    inputs:
+      azureSubscription: '$(azureServiceConnection)'
+      appType: 'webAppLinux'
+      appName: '$(webAppName)'
+      package: '$(Pipeline.Workspace)/django-package/app.zip'
+      runtimeStack: 'PYTHON|3.14'
+      startUpCommand: 'gunicorn --bind=0.0.0.0 --timeout 600 portfolio.wsgi'
+
